@@ -88,7 +88,7 @@ class MyAgentState
 				if (world[j][i]==WALL)
 					System.out.print(" # ");
 				if (world[j][i]==CLEAR)
-					System.out.print(" . ");
+					System.out.print(" _ ");
 				if (world[j][i]==DIRT)
 					System.out.print(" D ");
 				if (world[j][i]==HOME)
@@ -113,9 +113,11 @@ class MyAgentProgram implements AgentProgram {
 	public int isWall = 0;
 	public int goHome = 0;
 	public int goCorner = 0;*/
-	public int agent_vacuum_state = 0; // 0 = follow line, 1 = vacuuuuuuuuuuuuum, 2 = go home;
+	public int agent_vacuum_state = 0; // 0 = go home; 1 = follow border, 2 = vacuuuuuuuuuuuuum, 3 = go home;
 	public int bump_counter = 0;
 	public int u_turn_counter = 0;
+	public int homecounter = 0;
+	
 	public List<Action> actionQ = new ArrayList<Action>(); 
 	Deque<Action> actionStack = new ArrayDeque<Action>();
 	Stack<Integer> intActionStack = new Stack<Integer>();
@@ -207,13 +209,82 @@ class MyAgentProgram implements AgentProgram {
 
 		// Next action selection based on the percept value
 		switch (agent_vacuum_state){
-		case 0:	// follow line
+		case 0: // find way home
 		{
+			if (home) {
+				agent_vacuum_state++;
+				actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+				intActionStack.push(state.ACTION_MOVE_FORWARD);
+				//break;
+			} else if (actionStack.isEmpty()){
+			// vars for checking neighbors
+			int [] numbers = {0, 1, 2, 3};
+			int nextpos = 0;
+			int checkpos = 0;
+			double cost = Double.POSITIVE_INFINITY;
+			for( int i : numbers){
+				double iterCost = 0;
+				switch(i) {
+				case MyAgentState.NORTH:
+					checkpos = state.world[state.agent_x_position][state.agent_y_position-1];
+					iterCost += Math.abs(state.agent_x_position - 1) + Math.abs(state.agent_y_position-1 - 1);
+					break;
+				case MyAgentState.EAST:
+					checkpos = state.world[state.agent_x_position+1][state.agent_y_position];
+					iterCost += Math.abs(state.agent_x_position+1 - 1) + Math.abs(state.agent_y_position - 1);
+					break;
+				case MyAgentState.SOUTH:
+					checkpos = state.world[state.agent_x_position][state.agent_y_position+1];
+					iterCost += Math.abs(state.agent_x_position - 1) + Math.abs(state.agent_y_position+1 - 1);
+					break;
+				case MyAgentState.WEST:
+					checkpos = state.world[state.agent_x_position-1][state.agent_y_position];
+					iterCost += Math.abs(state.agent_x_position-1 - 1) + Math.abs(state.agent_y_position - 1);
+					break;
+				}
+				if (checkpos == state.WALL)
+					iterCost = Double.POSITIVE_INFINITY;
+
+				if (iterCost < cost){
+					nextpos = checkpos;
+					cost = iterCost;
+					System.out.println("nextpos=" + checkpos);
+					System.out.println("cost=" + cost);
+				}
+			}
+			// go to nextpos
+			int diff = state.agent_direction - nextpos;
+			actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+			intActionStack.push(state.ACTION_MOVE_FORWARD);
+			System.out.println("diff=" + diff);
+			while (diff != 0){
+				if (diff < 0){
+					actionStack.push(LIUVacuumEnvironment.ACTION_TURN_LEFT);
+					intActionStack.push(state.ACTION_TURN_LEFT);
+					diff++;
+				} else {
+					actionStack.push(LIUVacuumEnvironment.ACTION_TURN_RIGHT);
+					intActionStack.push(state.ACTION_TURN_RIGHT);
+					diff--;
+				}
+			}
+			}
+			break;
+		}
+
+			
+		case 1:	// follow line
+		{
+			homecounter++;
 			if (dirt){
 				System.out.println("DIRT -> choosing SUCK action!");
 				actionStack.push(LIUVacuumEnvironment.ACTION_SUCK);
 				intActionStack.push(state.ACTION_SUCK);
-			} else if (bump && !dirt){
+			} else if (home && homecounter > 10) {
+				agent_vacuum_state++;
+			}
+			
+			else if (bump && !dirt){
 				// append right forward left forward
 				actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
 				intActionStack.push(state.ACTION_MOVE_FORWARD);
@@ -266,7 +337,7 @@ class MyAgentProgram implements AgentProgram {
 			break;
 		}
 
-		case 1: // explore rest of map
+		case 2: // explore rest of map
 		{
 			//return NoOpAction.NO_OP;
 			//return LIUVacuumEnvironment.ACTION_SUCK;
@@ -276,7 +347,7 @@ class MyAgentProgram implements AgentProgram {
 			
 			break;
 		}
-		case 2: // u-turn at wall
+		case 3: // u-turn at wall
 		{
 			if (bump)
 				bump_counter++;
@@ -288,7 +359,7 @@ class MyAgentProgram implements AgentProgram {
 			
 			break;
 		}
-		case 3: 
+		case 4: 
 			// go home get drunk
 		{
 			if (home)
