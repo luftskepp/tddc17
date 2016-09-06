@@ -105,7 +105,7 @@ class MyAgentProgram implements AgentProgram {
 	private Random random_generator = new Random();
 
 	// Here you can define your variables!
-	public int iterationCounter = 450;
+	public int iterationCounter = 1000;
 	public MyAgentState state = new MyAgentState();
 
 	// own states
@@ -117,6 +117,14 @@ class MyAgentProgram implements AgentProgram {
 	public int bump_counter = 0;
 	public int u_turn_counter = 0;
 	public int homecounter = 0;
+	
+	public int [] numbers = {0, 1, 2, 3};
+	public int nextpos = 0;
+	public int checkpos = 0;
+	public int robotRealmX = 0;
+	public int robotRealmY = 0; //for later use, dont touch. very potent
+	public int [] target = {15,15};
+	public boolean hasTarget = false;
 	
 	public List<Action> actionQ = new ArrayList<Action>(); 
 	Deque<Action> actionStack = new ArrayDeque<Action>();
@@ -211,44 +219,67 @@ class MyAgentProgram implements AgentProgram {
 		switch (agent_vacuum_state){
 		case 0: // find way home
 		{
-			if (home) {
+			
+			if(dirt) {
+				actionStack.push(LIUVacuumEnvironment.ACTION_SUCK);
+				intActionStack.push(state.ACTION_SUCK);
+			} else if (home) {
 				agent_vacuum_state++;
-				actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
-				intActionStack.push(state.ACTION_MOVE_FORWARD);
+				if (actionStack.isEmpty()){
+					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+					intActionStack.push(state.ACTION_MOVE_FORWARD);
+				}
 				//break;
 			} else if (actionStack.isEmpty()){
 			// vars for checking neighbors
-			int [] numbers = {0, 1, 2, 3};
-			int nextpos = 0;
-			int checkpos = 0;
-			double cost = Double.POSITIVE_INFINITY;
+			//int [] numbers = {0, 1, 2, 3};
+			//int nextpos = 0;
+			//int checkpos = 0;
+			int cost = 10000;
 			for( int i : numbers){
-				double iterCost = 0;
+				int iterCost = 0;
 				switch(i) {
 				case MyAgentState.NORTH:
+				{
+					System.out.println("case north");
 					checkpos = state.world[state.agent_x_position][state.agent_y_position-1];
-					iterCost += Math.abs(state.agent_x_position - 1) + Math.abs(state.agent_y_position-1 - 1);
-					break;
-				case MyAgentState.EAST:
-					checkpos = state.world[state.agent_x_position+1][state.agent_y_position];
-					iterCost += Math.abs(state.agent_x_position+1 - 1) + Math.abs(state.agent_y_position - 1);
-					break;
-				case MyAgentState.SOUTH:
-					checkpos = state.world[state.agent_x_position][state.agent_y_position+1];
-					iterCost += Math.abs(state.agent_x_position - 1) + Math.abs(state.agent_y_position+1 - 1);
-					break;
-				case MyAgentState.WEST:
-					checkpos = state.world[state.agent_x_position-1][state.agent_y_position];
-					iterCost += Math.abs(state.agent_x_position-1 - 1) + Math.abs(state.agent_y_position - 1);
+					iterCost = Math.abs(state.agent_x_position - 1) + Math.abs(state.agent_y_position -1 - 1);
+					System.out.println("itercost" + iterCost);
 					break;
 				}
+				case MyAgentState.EAST:
+				{
+					System.out.println("case east");
+					checkpos = state.world[state.agent_x_position+1][state.agent_y_position];
+					iterCost = Math.abs(state.agent_x_position +1 - 1) + Math.abs(state.agent_y_position - 1);
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				case MyAgentState.SOUTH:
+				{
+					System.out.println("case south");
+					checkpos = state.world[state.agent_x_position][state.agent_y_position+1];
+					iterCost = Math.abs(state.agent_x_position - 1) + Math.abs(state.agent_y_position +1 - 1);
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				case MyAgentState.WEST:
+				{
+					System.out.println("case west");
+					checkpos = state.world[state.agent_x_position-1][state.agent_y_position];
+					iterCost = Math.abs(state.agent_x_position -1 - 1) + Math.abs(state.agent_y_position - 1);
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				}
 				if (checkpos == state.WALL)
-					iterCost = Double.POSITIVE_INFINITY;
+					iterCost = 100000; //Double.POSITIVE_INFINITY;
 
 				if (iterCost < cost){
-					nextpos = checkpos;
+					nextpos = i;
 					cost = iterCost;
-					System.out.println("nextpos=" + checkpos);
+					System.out.println("nextpos=" + nextpos);
+					System.out.println("dir =" + state.agent_direction);
 					System.out.println("cost=" + cost);
 				}
 			}
@@ -258,14 +289,17 @@ class MyAgentProgram implements AgentProgram {
 			intActionStack.push(state.ACTION_MOVE_FORWARD);
 			System.out.println("diff=" + diff);
 			while (diff != 0){
-				if (diff < 0){
+				if (diff > 0){
+					System.out.println("borde turna left");
 					actionStack.push(LIUVacuumEnvironment.ACTION_TURN_LEFT);
 					intActionStack.push(state.ACTION_TURN_LEFT);
-					diff++;
+					
+					diff--;
 				} else {
+					System.out.println("borde turna right");
 					actionStack.push(LIUVacuumEnvironment.ACTION_TURN_RIGHT);
 					intActionStack.push(state.ACTION_TURN_RIGHT);
-					diff--;
+					diff++;
 				}
 			}
 			}
@@ -276,12 +310,20 @@ class MyAgentProgram implements AgentProgram {
 		case 1:	// follow line
 		{
 			homecounter++;
+			if (state.agent_x_position > robotRealmX)
+				robotRealmX = state.agent_x_position;
+			if (state.agent_y_position > robotRealmY)
+				robotRealmY = state.agent_y_position;
 			if (dirt){
 				System.out.println("DIRT -> choosing SUCK action!");
 				actionStack.push(LIUVacuumEnvironment.ACTION_SUCK);
 				intActionStack.push(state.ACTION_SUCK);
 			} else if (home && homecounter > 10) {
 				agent_vacuum_state++;
+				actionStack.clear();
+				intActionStack.clear();
+				actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+				intActionStack.push(state.ACTION_MOVE_FORWARD);
 			}
 			
 			else if (bump && !dirt){
@@ -294,25 +336,7 @@ class MyAgentProgram implements AgentProgram {
 				intActionStack.push(state.ACTION_MOVE_FORWARD);
 				actionStack.push(LIUVacuumEnvironment.ACTION_TURN_RIGHT);
 				intActionStack.push(state.ACTION_TURN_RIGHT);
-			} else { // find home 2-times?
-				/*
-				int pointInFront = state.UNKNOWN;
-				switch (state.agent_direction) {
-				case MyAgentState.NORTH:
-					pointInFront = state.world[state.agent_x_position][state.agent_y_position-1];
-					break;
-				case MyAgentState.EAST:
-					pointInFront = state.world[state.agent_x_position+1][state.agent_y_position];
-					break;
-				case MyAgentState.SOUTH:
-					pointInFront = state.world[state.agent_x_position][state.agent_y_position+1];
-					break;
-				case MyAgentState.WEST:
-					pointInFront = state.world[state.agent_x_position-1][state.agent_y_position];
-					break;
-				default: pointInFront = state.UNKNOWN;
-				}
-				*/
+			} else { 
 				if(intActionStack.isEmpty()){
 					intActionStack.push(state.ACTION_MOVE_FORWARD);
 					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
@@ -338,28 +362,253 @@ class MyAgentProgram implements AgentProgram {
 		}
 
 		case 2: // explore rest of map
-		{
+		{	
+			if (dirt) {
+				actionStack.push(LIUVacuumEnvironment.ACTION_SUCK);
+				intActionStack.push(state.ACTION_SUCK);
+			}
+			else if (actionStack.isEmpty())
+			{	
+				System.out.println("enter target search");
+				System.out.println("realm X=" + robotRealmX + " Y=" + robotRealmY);
+				
+				if ((target[0] == state.agent_x_position && target[1] == state.agent_y_position) || state.world[state.agent_x_position][state.agent_y_position] != state.UNKNOWN)
+					hasTarget = false;
+				
+				int targetdist = 1000;
+				int numUnknowns = 0;
+				if (!hasTarget)
+				{
+				//int[] nexttarget = {1,1}; 
+				for (int i=1; i < robotRealmX; i++)
+				{
+					for (int j=1; j < robotRealmY ; j++)
+					{	
+						if (state.world[i][j] == state.UNKNOWN)
+						{
+							numUnknowns++;
+							int dist = Math.abs(state.agent_x_position - i) + Math.abs(state.agent_y_position - j);
+							if (dist < targetdist)
+							{
+								targetdist = dist;
+							
+								target = new int[] {i,j};
+								hasTarget = true;
+							}
+						}
+
+					}
+				}
+
+				if (numUnknowns == 0)
+				{
+					agent_vacuum_state++;
+					intActionStack.clear();
+					actionStack.clear();
+					intActionStack.push(state.ACTION_MOVE_FORWARD);
+					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+					break;
+				}
+				}
+				System.out.println("target(0)=" + target[0] + " target(1)=" + target[1] );
+
+
+
+
+				// vars for checking neighbors
+				//int [] numbers = {0, 1, 2, 3};
+				//int nextpos = 0;
+				//int checkpos = 0;
+				double cost = 10000;
+				for( int i : numbers){
+					double iterCost = 0;
+					switch(i) {
+					case MyAgentState.NORTH:
+					{
+						System.out.println("case north");
+						checkpos = state.world[state.agent_x_position][state.agent_y_position-1];
+						iterCost = Math.sqrt( Math.pow(state.agent_x_position - target[0], 2) + Math.pow(state.agent_y_position -1 - target[1], 2));
+						System.out.println("itercost" + iterCost);
+						break;
+					}
+					case MyAgentState.EAST:
+					{
+						System.out.println("case east");
+						checkpos = state.world[state.agent_x_position+1][state.agent_y_position];
+						iterCost = Math.abs(state.agent_x_position +1 - target[0]) + Math.abs(state.agent_y_position - target[1]);
+						iterCost = Math.sqrt( Math.pow(state.agent_x_position + 1 - target[0], 2) + Math.pow(state.agent_y_position - target[1], 2));
+						
+						System.out.println("itercost" + iterCost);
+						break;
+					}
+					case MyAgentState.SOUTH:
+					{
+						System.out.println("case south");
+						checkpos = state.world[state.agent_x_position][state.agent_y_position+1];
+						iterCost = Math.abs(state.agent_x_position - target[0]) + Math.abs(state.agent_y_position +1 - target[1]);
+						iterCost = Math.sqrt( Math.pow(state.agent_x_position - target[0], 2) + Math.pow(state.agent_y_position +1 - target[1], 2));
+						System.out.println("itercost" + iterCost);
+						break;
+					}
+					case MyAgentState.WEST:
+					{
+						System.out.println("case west");
+						checkpos = state.world[state.agent_x_position-1][state.agent_y_position];
+						iterCost = Math.abs(state.agent_x_position -1 - target[0]) + Math.abs(state.agent_y_position - target[1]);
+						iterCost = Math.sqrt( Math.pow(state.agent_x_position-1 - target[0], 2) + Math.pow(state.agent_y_position - target[1], 2));
+						System.out.println("itercost" + iterCost);
+						break;
+					}
+					}
+					if (checkpos == state.WALL)
+						iterCost = 100000; //Double.POSITIVE_INFINITY;
+
+					if (iterCost < cost){
+						nextpos = i;
+						cost = iterCost;
+						System.out.println("nextpos=" + nextpos);
+						System.out.println("dir =" + state.agent_direction);
+						System.out.println("cost=" + cost);
+					}
+				}
+				// go to nextpos
+				int diff = state.agent_direction - nextpos;
+				actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+				intActionStack.push(state.ACTION_MOVE_FORWARD);
+				System.out.println("diff=" + diff);
+				while (diff != 0){
+					if (diff > 0){
+						System.out.println("borde turna left");
+						actionStack.push(LIUVacuumEnvironment.ACTION_TURN_LEFT);
+						intActionStack.push(state.ACTION_TURN_LEFT);
+
+						diff--;
+					} else {
+						System.out.println("borde turna right");
+						actionStack.push(LIUVacuumEnvironment.ACTION_TURN_RIGHT);
+						intActionStack.push(state.ACTION_TURN_RIGHT);
+						diff++;
+					}
+				}
+			}
+
 			//return NoOpAction.NO_OP;
 			//return LIUVacuumEnvironment.ACTION_SUCK;
-			System.out.println("state1");
-			intActionStack.push(state.ACTION_NONE);
-			actionStack.push(NoOpAction.NO_OP);
-			
+			System.out.println("let the war begin");
+			//intActionStack.push(state.ACTION_NONE);
+			//actionStack.push(NoOpAction.NO_OP);
+
 			break;
 		}
-		case 3: // u-turn at wall
+
+		
+		case 3: // find way home
 		{
-			if (bump)
+			if (home) {
+				agent_vacuum_state++;
+				if (actionStack.isEmpty()){
+					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+					intActionStack.push(state.ACTION_MOVE_FORWARD);
+				}
+				//break;
+			} else if (actionStack.isEmpty()){
+			// vars for checking neighbors
+			//int [] numbers = {0, 1, 2, 3};
+			//int nextpos = 0;
+			//int checkpos = 0;
+			double cost = 10000;
+			for( int i : numbers){
+				double iterCost = 0;
+				switch(i) {
+				case MyAgentState.NORTH:
+				{
+					System.out.println("case north");
+					checkpos = state.world[state.agent_x_position][state.agent_y_position-1];
+					iterCost = Math.sqrt( Math.pow(state.agent_x_position - target[0], 2) + Math.pow(state.agent_y_position -1 - target[1], 2));
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				case MyAgentState.EAST:
+				{
+					System.out.println("case east");
+					checkpos = state.world[state.agent_x_position+1][state.agent_y_position];
+					iterCost = Math.abs(state.agent_x_position +1 - target[0]) + Math.abs(state.agent_y_position - target[1]);
+					iterCost = Math.sqrt( Math.pow(state.agent_x_position + 1 - target[0], 2) + Math.pow(state.agent_y_position - target[1], 2));
+					
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				case MyAgentState.SOUTH:
+				{
+					System.out.println("case south");
+					checkpos = state.world[state.agent_x_position][state.agent_y_position+1];
+					iterCost = Math.abs(state.agent_x_position - target[0]) + Math.abs(state.agent_y_position +1 - target[1]);
+					iterCost = Math.sqrt( Math.pow(state.agent_x_position - target[0], 2) + Math.pow(state.agent_y_position +1 - target[1], 2));
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				case MyAgentState.WEST:
+				{
+					System.out.println("case west");
+					checkpos = state.world[state.agent_x_position-1][state.agent_y_position];
+					iterCost = Math.abs(state.agent_x_position -1 - target[0]) + Math.abs(state.agent_y_position - target[1]);
+					iterCost = Math.sqrt( Math.pow(state.agent_x_position-1 - target[0], 2) + Math.pow(state.agent_y_position - target[1], 2));
+					System.out.println("itercost" + iterCost);
+					break;
+				}
+				}
+				if (checkpos == state.WALL)
+					iterCost = 100000; //Double.POSITIVE_INFINITY;
+
+				if (iterCost < cost){
+					nextpos = i;
+					cost = iterCost;
+					System.out.println("nextpos=" + nextpos);
+					System.out.println("dir =" + state.agent_direction);
+					System.out.println("cost=" + cost);
+				}
+			}
+			// go to nextpos
+			int diff = state.agent_direction - nextpos;
+			actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
+			intActionStack.push(state.ACTION_MOVE_FORWARD);
+			System.out.println("diff=" + diff);
+			while (diff != 0){
+				if (diff < 0){
+					System.out.println("borde turna left");
+					actionStack.push(LIUVacuumEnvironment.ACTION_TURN_LEFT);
+					intActionStack.push(state.ACTION_TURN_LEFT);
+					
+					diff++;
+				} else {
+					System.out.println("borde turna right");
+					actionStack.push(LIUVacuumEnvironment.ACTION_TURN_RIGHT);
+					intActionStack.push(state.ACTION_TURN_RIGHT);
+					diff--;
+				}
+			}
+			}
+			break;
+		}
+
+		
+		
+
+		case 4: // stop
+		{	
+			intActionStack.push(state.ACTION_NONE);
+			actionStack.push(NoOpAction.NO_OP);
+			/*if (bump)
 				bump_counter++;
 			if (bump_counter > 1){
 				agent_vacuum_state = 3;
 				state.agent_last_action=state.ACTION_SUCK;
 				return LIUVacuumEnvironment.ACTION_SUCK;
 			}
-			
+			*/
 			break;
 		}
-		case 4: 
+		/*case 5: 
 			// go home get drunk
 		{
 			if (home)
@@ -408,7 +657,7 @@ class MyAgentProgram implements AgentProgram {
 				}
 			}
 			break;
-		}
+		}*/
 		default:
 			intActionStack.push(state.ACTION_NONE);
 			actionStack.push(NoOpAction.NO_OP);
