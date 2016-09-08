@@ -45,7 +45,8 @@ public class CustomGraphSearch implements SearchObject {
 		
 		while (!frontier.isEmpty())
 		{
-			SearchNode node = frontier.removeFirst();
+			SearchNode node = frontier.peekAtFront();
+			frontier.removeFirst();
 			explored.add(node);
 			
 			if (p.isGoalState(node.getState()))
@@ -57,7 +58,22 @@ public class CustomGraphSearch implements SearchObject {
 			else
 			{
 				// do stuff
-				
+				GridPos currentState = node.getState();
+				ArrayList<GridPos> childStates = p.getReachableStatesFrom(currentState);
+					for ( int i = 0; i < childStates.size(); i++ )
+					{
+						GridPos state = childStates.get(i);
+						SearchNode childNode = new SearchNode(state, node);
+						//boolean newNode = true;
+						//for ( int j = 0; j < explored.size(); j++ )
+						//	if ( explored.)
+						
+						if (!explored.contains(childNode) && !frontier.contains(childNode))
+							if (insertFront)
+								frontier.addNodeToFront(childNode);
+							else 
+								frontier.addNodeToBack(childNode);
+					}
 			}
 		}
 		/* Some hints:
