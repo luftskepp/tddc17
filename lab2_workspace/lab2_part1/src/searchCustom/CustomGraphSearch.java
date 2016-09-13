@@ -45,29 +45,25 @@ public class CustomGraphSearch implements SearchObject {
 		
 		while (!frontier.isEmpty())
 		{
-			SearchNode node = frontier.peekAtFront();
+			// expand first node in frontier
+			SearchNode node = frontier.peekAtFront(); 
 			frontier.removeFirst();
 			explored.add(node);
-			
-			if (p.isGoalState(node.getState()))
+			// return path if goal node
+			if (p.isGoalState(node.getState())) // return path if goal node
 			{
 				path = node.getPathFromRoot();
 				return path;
-				//break;
 			}
 			else
 			{
-				// do stuff
+				// add child nodes to frontier if not already in frontier or explored
 				GridPos currentState = node.getState();
 				ArrayList<GridPos> childStates = p.getReachableStatesFrom(currentState);
 					for ( int i = 0; i < childStates.size(); i++ )
 					{
 						GridPos state = childStates.get(i);
 						SearchNode childNode = new SearchNode(state, node);
-						//boolean newNode = true;
-						//for ( int j = 0; j < explored.size(); j++ )
-						//	if ( explored.)
-						
 						if (!explored.contains(childNode) && !frontier.contains(childNode))
 							if (insertFront)
 								frontier.addNodeToFront(childNode);
