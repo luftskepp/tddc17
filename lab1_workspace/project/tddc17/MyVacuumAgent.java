@@ -113,7 +113,7 @@ class MyAgentProgram implements AgentProgram {
 	public int isWall = 0;
 	public int goHome = 0;
 	public int goCorner = 0;*/
-	public int agent_vacuum_state = 0; // 0 = go home; 1 = follow border, 2 = vacuuuuuuuuuuuuum, 3 = go home;
+	public int agent_vacuum_state = 0; // 0 = go home; 1 = follow border, 2 = discover and vacum, 3 = go home;
 	public int bump_counter = 0;
 	public int u_turn_counter = 0;
 	public int homecounter = 0;
@@ -122,11 +122,11 @@ class MyAgentProgram implements AgentProgram {
 	public int nextpos = 0;
 	public int checkpos = 0;
 	public int robotRealmX = 0;
-	public int robotRealmY = 0; //for later use, dont touch. very potent
+	public int robotRealmY = 0; //size of the domain that uppdates while exploring the edges
 	public int [] target = {15,15};
 	public boolean hasTarget = false;
 	
-	public List<Action> actionQ = new ArrayList<Action>(); 
+	public List<Action> actionQ = new ArrayList<Action>();  // The list of actions the agent will perform.
 	Deque<Action> actionStack = new ArrayDeque<Action>();
 	Stack<Integer> intActionStack = new Stack<Integer>();
 
@@ -229,12 +229,9 @@ class MyAgentProgram implements AgentProgram {
 					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
 					intActionStack.push(state.ACTION_MOVE_FORWARD);
 				}
-				//break;
+				
 			} else if (actionStack.isEmpty()){
-			// vars for checking neighbors
-			//int [] numbers = {0, 1, 2, 3};
-			//int nextpos = 0;
-			//int checkpos = 0;
+			
 			int cost = 10000;
 			for( int i : numbers){
 				int iterCost = 0;
@@ -273,7 +270,7 @@ class MyAgentProgram implements AgentProgram {
 				}
 				}
 				if (checkpos == state.WALL)
-					iterCost = 100000; //Double.POSITIVE_INFINITY;
+					iterCost = 100000; 
 
 				if (iterCost < cost){
 					nextpos = i;
@@ -307,7 +304,8 @@ class MyAgentProgram implements AgentProgram {
 		}
 
 			
-		case 1:	// follow line
+		case 1:	// Finding the home tile and mapping the grid. When we implemented this we thought the home tile always was postitioned at the upper most left corner.
+			//Once the home tile have been found, the agent will map the outher walls of the grid, updating the maximum size of our domain.
 		{
 			homecounter++;
 			if (state.agent_x_position > robotRealmX)
@@ -341,27 +339,13 @@ class MyAgentProgram implements AgentProgram {
 					intActionStack.push(state.ACTION_MOVE_FORWARD);
 					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
 				}
-				/*
-				if (pointInFront == state.CLEAR){
-					//agent_vacuum_state = 1;
-					//intActionStack.clear();
-					//actionStack.clear();
-					intActionStack.push(state.ACTION_MOVE_FORWARD);
-					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
-				} else {
-					if(intActionStack.isEmpty()){
-						intActionStack.push(state.ACTION_MOVE_FORWARD);
-						actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
-					}
-					System.out.println("point in front=" + pointInFront);
-					//state.agent_last_action=state.ACTION_MOVE_FORWARD;
-					//return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-				} */
+				
 			}
 			break;
 		}
 
-		case 2: // explore rest of map
+		case 2: // The agent checks if there is any "unknown" tiles left in the grid. If there is it choses the closest and tries to move to that tile. It will repeat the tile til all 
+			//unknown tiles are discovered. Then it will move to the next state
 		{	
 			if (dirt) {
 				actionStack.push(LIUVacuumEnvironment.ACTION_SUCK);
@@ -415,10 +399,7 @@ class MyAgentProgram implements AgentProgram {
 
 
 
-				// vars for checking neighbors
-				//int [] numbers = {0, 1, 2, 3};
-				//int nextpos = 0;
-				//int checkpos = 0;
+				
 				double cost = 10000;
 				for( int i : numbers){
 					double iterCost = 0;
@@ -492,17 +473,14 @@ class MyAgentProgram implements AgentProgram {
 				}
 			}
 
-			//return NoOpAction.NO_OP;
-			//return LIUVacuumEnvironment.ACTION_SUCK;
+			
 			System.out.println("let the war begin");
-			//intActionStack.push(state.ACTION_NONE);
-			//actionStack.push(NoOpAction.NO_OP);
-
+			
 			break;
 		}
 
 		
-		case 3: // find way home
+		case 3: // The agent will now try to move to the home tile, chosing the path with the shortest euklidean distance. 
 		{
 			if (home) {
 				agent_vacuum_state++;
@@ -510,12 +488,9 @@ class MyAgentProgram implements AgentProgram {
 					actionStack.push(LIUVacuumEnvironment.ACTION_MOVE_FORWARD);
 					intActionStack.push(state.ACTION_MOVE_FORWARD);
 				}
-				//break;
+				
 			} else if (actionStack.isEmpty()){
-			// vars for checking neighbors
-			//int [] numbers = {0, 1, 2, 3};
-			//int nextpos = 0;
-			//int checkpos = 0;
+			
 			double cost = 10000;
 			for( int i : numbers){
 				double iterCost = 0;
@@ -558,7 +533,7 @@ class MyAgentProgram implements AgentProgram {
 				}
 				}
 				if (checkpos == state.WALL)
-					iterCost = 100000; //Double.POSITIVE_INFINITY;
+					iterCost = 100000; 
 
 				if (iterCost < cost){
 					nextpos = i;
@@ -598,74 +573,18 @@ class MyAgentProgram implements AgentProgram {
 		{	
 			intActionStack.push(state.ACTION_NONE);
 			actionStack.push(NoOpAction.NO_OP);
-			/*if (bump)
-				bump_counter++;
-			if (bump_counter > 1){
-				agent_vacuum_state = 3;
-				state.agent_last_action=state.ACTION_SUCK;
-				return LIUVacuumEnvironment.ACTION_SUCK;
-			}
-			*/
+			
+			
 			break;
 		}
-		/*case 5: 
-			// go home get drunk
-		{
-			if (home)
-				return NoOpAction.NO_OP;
-			else {
-				// move towards home
-				switch (state.agent_direction){
-				case 0: // north
-				{
-					if (state.agent_y_position == 1){
-						state.agent_last_action=state.ACTION_TURN_LEFT;
-						state.agent_direction = ((state.agent_direction-1) % 4);
-						if (state.agent_direction<0) 
-							state.agent_direction +=4;
-						return LIUVacuumEnvironment.ACTION_TURN_LEFT;
-					} else {
-						state.agent_last_action=state.ACTION_MOVE_FORWARD;
-						return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-					}
-				}
-				case 1: // east
-				{
-					state.agent_last_action=state.ACTION_TURN_LEFT;
-					state.agent_direction = ((state.agent_direction-1) % 4);
-					if (state.agent_direction<0) 
-						state.agent_direction +=4;
-					return LIUVacuumEnvironment.ACTION_TURN_LEFT;
-				}
-				case 2: // south
-				{
-					state.agent_last_action=state.ACTION_TURN_RIGHT;
-					state.agent_direction = ((state.agent_direction+1) % 4);
-					return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-				}
-				case 3: // west
-				{
-					if (state.agent_x_position == 1){
-						state.agent_last_action=state.ACTION_TURN_RIGHT;
-						state.agent_direction = ((state.agent_direction+1) % 4);
-						return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
-					} else {
-						state.agent_last_action=state.ACTION_MOVE_FORWARD;
-						return LIUVacuumEnvironment.ACTION_MOVE_FORWARD;
-					}
-				}
-				}
-			}
-			break;
-		}*/
+		
 		default:
 			intActionStack.push(state.ACTION_NONE);
 			actionStack.push(NoOpAction.NO_OP);
-			// state.agent_last_action=state.ACTION_SUCK;
-			//return LIUVacuumEnvironment.ACTION_SUCK;
+			
 		}
 
-		// return action from stack
+
 		state.agent_last_action = intActionStack.pop();
 		
 		System.out.println("last action=" + state.agent_last_action);
@@ -675,12 +594,10 @@ class MyAgentProgram implements AgentProgram {
 			state.agent_direction = ((state.agent_direction-1) % 4);
 			if (state.agent_direction<0) 
 				state.agent_direction +=4;
-			//state.agent_last_action = state.ACTION_TURN_LEFT;
-			//return LIUVacuumEnvironment.ACTION_TURN_LEFT;
+			
 		} else if (state.agent_last_action == state.ACTION_TURN_RIGHT) {
 			state.agent_direction = ((state.agent_direction+1) % 4);
-			//state.agent_last_action = state.ACTION_TURN_RIGHT;
-			//return LIUVacuumEnvironment.ACTION_TURN_RIGHT;
+			
 		} 
 		return actionStack.pop();
 	}
