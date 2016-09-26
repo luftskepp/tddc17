@@ -1,108 +1,62 @@
-(define (domain shakey)
-   (:requirements :strips :typing)
-   (:types 
-	shakey 
-	room
-	small_obj
-	box
-	light_switch
-	door
-	claw)
+(define (domain shakey_world)
+   (:requirements :strips)
 
    (:predicates
-	(adjacent	?l1   ?l2 - room)		; can move from ?l1 directly to ?l2
-	(wide_door	?d - door)
-	(attached	?p - pile ?l - room)	; pile ?p attached to location ?l
-	(belong		?k - light_switch ?l - room)	; crane ?k belongs to location ?l
+	(shakey ?s)
+	(room ?r)
+	(claw ?c)
+	(box ?b)
+	(lights ?l)
+	(lights_on ?r)
+	(small_obj ?o)	
+	(adjacent	?r1   ?r2)		; can move from ?l1 directly to ?l2
+	;;(wide_door	?d - door)
+	;;(attached	?p - pile ?l - room)	; pile ?p attached to location ?l
+	;;(belong		?k - light_switch ?l - room)	; crane ?k belongs to location ?l
+	(empty ?c)
+	(obj_at ?o ?r)
+	(at		?s ?r)	; robot ?r is at location ?l
 
-	(at		?r - shakey ?l - room)	; robot ?r is at location ?l
 	
-	(holding	?k - claw ?c - small_obj)	; crane ?k is holding container ?c
-	(empty		?k - claw)			; crane ?k is not holding anything
-
-	(in		?c - contain ?p - pile)	; container ?c is somewhere in pile ?p
-	(top		?c - container ?p - pile)	; container ?c is on top of pile ?p
-	(on		?k1 ?k2 - container )		; container ?k1 is on container ?k2
    )
 
 (:action ACTION_1_move_room1
-    [:parameters (?Ps - shakey ?room_from - room ?room_to - room )]
+    [:parameters (?s ?room_from ?room_to )]
 
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-
-(:action ACTION_4_move_to_light1
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-(:action ACTION_4_move_to_light2
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
+    [:precondition (and(at ?s ?room_from)(adjacent ?room_from ?room_to)
+			(room ?room_to)(room ?room_from)(shakey ?s) )]
+    [:effect (and(not(at ?s ?room_from))(at ?s ?room_to) )]
 )
 
-(:action ACTION_4_move_to_light3
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-(:action ACTION_4_move_to_box
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-(:action ACTION_4_move_to_obj
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
+(:action ACTION_pick_up
+    [:parameters (?c ?o ?r ?s)]
+    [:precondition (and (shakey ?s)(claw ?c)(small_obj ?o)(room ?r)
+			(at ?s ?r)(obj_at ?o ?r)(lights_on ?r)
+			(empty ?c))]
+    [:effect (and (not(obj_at ?o ?r))(not(empty ?c))(obj_at ?o ?c))]
 )
 
-(:action ACTION_5_push
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
+(:action ACTION_lights_on
+	[:parameters (?s ?r ?b)]
+	[:precondition (and (shakey ?s)(box ?b)(room ?r)
+		(at ?s ?r)(not(lights_on ?r))(obj_at ?b ?r) )]
+	[:effect (lights_on ?r)]
 )
 
-
-(:action ACTION_6_carry_obj
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
+(:action ACTION_put_down
+    [:parameters (?c ?o ?r ?s)]
+    [:precondition (and (shakey ?s)(claw ?c)(small_obj ?o)(room ?r)
+		(at ?s ?r)(obj_at ?o ?c) (not(empty ?c)) )]
+    [:effect (and (not(obj_at ?o ?c))(empty ?c)
+	(obj_at ?o ?r))]
 )
 
-(:action ACTION_7_light_on
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-(:action ACTION_7_light_off
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-
-
-(:action ACTION_8_climb_up
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
+(:action ACTION_push_box
+    [:parameters ( ?b ?r1 ?r2 ?s)]
+    [:precondition (and (shakey ?s)(box ?b)(room ?r1)(room ?r2)
+		(at ?s ?r1)(obj_at ?b ?r1) )]
+    [:effect (and (not(obj_at ?b ?r1)) (obj_at ?b ?r2) 
+	(not(at ?s ?r1)) (at ?s ?r2) )]
 )
 
-(:action ACTION_9_climb_down
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
 )
-(:action ACTION_4_identify_obj
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-(:action ACTION_4_drop_obj
-    [:parameters (?P1 ?P2 ... ?PN)]
-    [:precondition PRECOND_FORMULA]
-    [:effect EFFECT_FORMULA]
-)
-
-
