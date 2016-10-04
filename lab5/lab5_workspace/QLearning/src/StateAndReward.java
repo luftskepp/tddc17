@@ -4,47 +4,39 @@ public class StateAndReward {
 	/* State discretization function for the angle controller */
 	public static String getStateAngle(double angle, double vx, double vy) {
 
-		/* TODO: IMPLEMENT THIS FUNCTION */
 		int stateAngle = discretize(angle, 61, -Math.PI, Math.PI); //(( (int) (10*angle) );
-
-		String state = String.valueOf(stateAngle);
-		//System.out.println("anglestate= " + state);
-		return state;
+		
+		return String.valueOf(stateAngle);
 	}
 
 	/* Reward function for the angle controller */
 	public static double getRewardAngle(double angle, double vx, double vy) {
 
-		/* TODO: IMPLEMENT THIS FUNCTION */
 		double reward = -0.10;
-		int angleState = discretize(angle, 61, -Math.PI, Math.PI);
-		if ( angleState == 30)
-			reward = 1;
 		
+		String stateAngle = getStateAngle(angle, vx, vy);
+		if ( stateAngle.equals("30"))
+			reward = 1;
 
 		return reward;
 	}
 
 	/* State discretization function for the full hover controller */
 	public static String getStateHover(double angle, double vx, double vy) {
-
-		/* TODO: IMPLEMENT THIS FUNCTION */
-		//int xhoverState = discretize(vx, 21, -10, 10);
-		int yhoverState = discretize(vy, 21, -10, 10);
-		String state = String.valueOf(yhoverState);
 		
-		return state;
+		int hoverStateX = discretize(vx, 11, -5, 5);
+		int hoverStateY = discretize(vy, 11, -5, 5);
+		
+		return String.valueOf(hoverStateX)+String.valueOf(hoverStateY); // add separator?
 	}
 
 	/* Reward function for the full hover controller */
 	public static double getRewardHover(double angle, double vx, double vy) {
 
-		
-
 		double reward = -0.1;
-		/* TODO: IMPLEMENT THIS FUNCTION */
-		int hoverState = discretize(vy, 61, -30, 30);
-		if (hoverState == 31)
+		
+		String stateHover = getStateHover(angle, vx, vy);
+		if(stateHover.equals("55"))
 			reward = 1;
 
 		return reward;
