@@ -1,0 +1,62 @@
+(define (domain shakey_world)
+   (:requirements :strips)
+
+   (:predicates
+	(shakey ?s)
+	(room ?r)
+	(claw ?c)
+	(box ?b)
+	(lights ?l)
+	(door ?d)
+	(wide ?d)
+	(lights_on ?r)
+	(small_obj ?o)	
+	(adjacent	?r1   ?r2)		; can move from ?l1 directly to ?l2
+	(attached ?d ?r) ; door betweem r1 and r2
+	(empty ?c)
+	(obj_at ?o ?r)
+	(at		?s ?r)	; robot ?r is at location ?l
+
+	
+   )
+
+(:action ACTION_1_move_room1
+    :parameters (?s ?room_from ?room_to ?d)
+    :precondition (and(at ?s ?room_from)(adjacent ?room_from ?room_to)
+			(room ?room_to)(room ?room_from)(shakey ?s)(door ?d)(attached ?d ?room_from)
+			(attached ?d ?room_to) )
+    :effect (and (not(at ?s ?room_from)) (at ?s ?room_to) )
+)
+
+(:action ACTION_pick_up
+    :parameters (?c ?o ?r ?s)
+    :precondition (and (shakey ?s)(claw ?c)(small_obj ?o)(room ?r)
+			(at ?s ?r)(obj_at ?o ?r)(lights_on ?r)
+			(empty ?c))
+    :effect (and (not(obj_at ?o ?r))(not(empty ?c))(obj_at ?o ?c))
+)
+
+(:action ACTION_lights_on
+	:parameters (?s ?r ?b)
+	:precondition (and (shakey ?s)(box ?b)(room ?r)
+		(at ?s ?r)(not(lights_on ?r))(obj_at ?b ?r) )
+	:effect (lights_on ?r)
+)
+
+(:action ACTION_put_down
+    :parameters (?c ?o ?r ?s)
+    :precondition (and (shakey ?s)(claw ?c)(small_obj ?o)(room ?r)
+		(at ?s ?r)(obj_at ?o ?c) (not(empty ?c)) )
+    :effect (and (not(obj_at ?o ?c))(empty ?c)
+	(obj_at ?o ?r))
+)
+
+(:action ACTION_push_box
+    :parameters ( ?b ?r1 ?r2 ?s ?d)
+    :precondition (and (shakey ?s)(box ?b)(room ?r1)(room ?r2)(door ?d)(wide ?d)
+		(at ?s ?r1)(obj_at ?b ?r1)(adjacent ?r1 ?r2)(attached ?d ?r1)(attached ?d ?r2) )
+    :effect (and (not(obj_at ?b ?r1)) (obj_at ?b ?r2) 
+	(not(at ?s ?r1)) (at ?s ?r2) )
+)
+
+)
