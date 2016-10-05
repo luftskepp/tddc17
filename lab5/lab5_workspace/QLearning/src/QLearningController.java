@@ -40,7 +40,7 @@ public class QLearningController extends Controller {
 	/* PARAMETERS OF THE LEARNING ALGORITHM - THESE MAY BE TUNED BUT THE DEFAULT VALUES OFTEN WORK REASONABLY WELL  */
 	static final double GAMMA_DISCOUNT_FACTOR = 0.95; /* Must be < 1, small values make it very greedy */
 	static final double LEARNING_RATE_CONSTANT = 10; /* See alpha(), lower values are good for quick results in large and deterministic state spaces */
-	double explore_chance = 0.9; /* The exploration chance during the exploration phase */
+	double explore_chance = 0.5; /* The exploration chance during the exploration phase */
 	final static int REPEAT_ACTION_MAX = 30; /* Repeat selected action at most this many times trying reach a new state, without a max it could loop forever if the action cannot lead to a new state */
 
 	/* Some internal counters */
@@ -89,6 +89,7 @@ public class QLearningController extends Controller {
 		/* TODO: Remember to change NUM_ACTIONS constant to reflect the number of actions (including 0, no action) */
 		//System.out.println("action = " + action);
 		/* TODO: IMPLEMENT THIS FUNCTION */
+		resetRockets();
 		switch(action){
 		case 0:
 		{ 
@@ -107,14 +108,14 @@ public class QLearningController extends Controller {
 		case 2:
 		{
 			leftEngine.setBursting(true);
-			rightEngine.setBursting(true);
-			middleEngine.setBursting(true);
+			rightEngine.setBursting(false);
+			middleEngine.setBursting(false);
 			break;	
 		}
 		case 3:
 		{
-			leftEngine.setBursting(true);
-			rightEngine.setBursting(false);
+			leftEngine.setBursting(false);
+			rightEngine.setBursting(true);
 			middleEngine.setBursting(false);
 			break;	
 		}
@@ -122,7 +123,7 @@ public class QLearningController extends Controller {
 		{
 			leftEngine.setBursting(false);
 			rightEngine.setBursting(true);
-			middleEngine.setBursting(false);
+			middleEngine.setBursting(true);
 			break;	
 		}
 		case 5:
@@ -134,16 +135,9 @@ public class QLearningController extends Controller {
 		}
 		case 6:
 		{
-			leftEngine.setBursting(false);
-			rightEngine.setBursting(true);
-			middleEngine.setBursting(true);
-			break;	
-		}
-		case 7:
-		{
 			leftEngine.setBursting(true);
 			rightEngine.setBursting(true);
-			middleEngine.setBursting(false);
+			middleEngine.setBursting(true);
 			break;	
 		}
 		default:
@@ -161,20 +155,27 @@ public class QLearningController extends Controller {
 		iteration++;
 		
 		if (!paused) {
-			String new_state = StateAndReward.getStateAngle(angle.getValue(), vx.getValue(), vy.getValue());
-
+			String angle_state = StateAndReward.getStateAngle(angle.getValue(), vx.getValue(), vy.getValue());
+			String hover_state = StateAndReward.getStateHover(angle.getValue(), vx.getValue(), vy.getValue());
+			String new_state = angle_state + "-" + hover_state;
+			//String new_state = hover_state;
 			/* Repeat the chosen action for a while, hoping to reach a new state. This is a trick to speed up learning on this problem. */
 			action_counter++;
 			if (new_state.equals(previous_state) && action_counter < REPEAT_ACTION_MAX) {
 				return;
 			}
-			double previous_reward = StateAndReward.getRewardAngle(previous_angle, previous_vx, previous_vy);
+			double angle_reward = StateAndReward.getRewardAngle(previous_angle, previous_vx, previous_vy);
+			double hover_reward = StateAndReward.getRewardHover(previous_angle, previous_vx, previous_vy);
+			double previous_reward = 0;
+			if (angle_reward + hover_reward > 1)
+				previous_reward = 10;
+			//double previous_reward = hover_reward;
 			action_counter = 0;
 
 			/* The agent is in a new state, do learning and action selection */
 			if (previous_state != null) {
 				/* Create state-action key */
-				String prev_stateaction = previous_state + previous_action;
+				String prev_stateaction = previous_state + '-' + previous_action;
 
 				/* Increment state-action counter */
 				if (Ntable.get(prev_stateaction) == null) {
@@ -193,7 +194,7 @@ public class QLearningController extends Controller {
 				//String newStateAction;
 				for(int i=0; i< NUM_ACTIONS; i++)
 				{
-					String nextstateaction = new_state + String.valueOf(i);
+					String nextstateaction = new_state + '-' + i;
 					if ( Qtable.get(nextstateaction) == null)
 						 Qtable.put(nextstateaction, 0.0);
 					if(  Qtable.get(nextstateaction) > nextStateMax)
@@ -274,7 +275,7 @@ public class QLearningController extends Controller {
 		/* Find action with highest Q-val (utility) in given state */
 		double maxQval = Double.NEGATIVE_INFINITY;
 		for (int i = 0; i < NUM_ACTIONS; i++) {
-			String test_pair = state + i; /* Generate a state-action pair for all actions */
+			String test_pair = state + '-' + i; /* Generate a state-action pair for all actions */
 			double Qval = 0;
 			if (Qtable.get(test_pair) != null) {
 				Qval = Qtable.get(test_pair);
